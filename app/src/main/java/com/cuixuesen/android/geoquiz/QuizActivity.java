@@ -14,11 +14,20 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+
 public class QuizActivity extends AppCompatActivity {
 
     private static final String TAG = "QuizActivity";
 
     private static final String KEY_INDEX = "index";
+
+    private static final String KEY_ANSWER = "answer";
+
+    private static final String KEY_COUNT = "count";
+
+    private static final String KEY_DONE = "done";
 
     private Button mTrueButton;
 
@@ -31,12 +40,12 @@ public class QuizActivity extends AppCompatActivity {
     private TextView mQuestionTextView;
 
     private Question[] mQuestionBank = new Question[]{
-            new Question(R.string.question_australia, true),
-            new Question(R.string.question_oceans, true),
-            new Question(R.string.question_mideast, false),
-            new Question(R.string.question_africa, false),
-            new Question(R.string.question_americas, true),
-            new Question(R.string.question_asia, true)
+            new Question(R.string.question_australia, true, 0),
+            new Question(R.string.question_oceans, true, 0),
+            new Question(R.string.question_mideast, false, 0),
+            new Question(R.string.question_africa, false, 0),
+            new Question(R.string.question_americas, true, 0),
+            new Question(R.string.question_asia, true, 0)
     };
 
     private int mCurrentIndex = 0;
@@ -50,6 +59,12 @@ public class QuizActivity extends AppCompatActivity {
 
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+            int [] answerList = savedInstanceState.getIntArray(KEY_ANSWER);
+            for (int i = 0; i < mQuestionBank.length; i++) {
+                mQuestionBank[i].setAnswered(answerList[i]);
+            }
+            correctCount = savedInstanceState.getInt(KEY_COUNT, 0);
+            questionDoneCount = savedInstanceState.getInt(KEY_DONE, 0);
         }
 
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
@@ -104,7 +119,18 @@ public class QuizActivity extends AppCompatActivity {
     private void updateQuestion() {
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
+        if (mQuestionBank[mCurrentIndex].getAnswered() == 0) {
+            mTrueButton.setEnabled(true);
+            mFalseButton.setEnabled(true);
+        } else {
+            mTrueButton.setEnabled(false);
+            mFalseButton.setEnabled(false);
+        }
     }
+
+    private int questionDoneCount = 0;
+
+    private int correctCount = 0;
 
     private void checkAnswer(boolean userPressedTrue) {
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
@@ -113,11 +139,27 @@ public class QuizActivity extends AppCompatActivity {
 
         if (userPressedTrue == answerIsTrue) {
             messageResId = R.string.correct_toast;
+            correctCount++;
+            mQuestionBank[mCurrentIndex].setAnswered(1);
         } else {
             messageResId = R.string.incorrect_toast;
+            mQuestionBank[mCurrentIndex].setAnswered(-1);
         }
+        mTrueButton.setEnabled(false);
+        mFalseButton.setEnabled(false);
+
 
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+
+        questionDoneCount++;
+
+        if (questionDoneCount == mQuestionBank.length) {
+            NumberFormat percent = NumberFormat.getPercentInstance();
+            percent.setMaximumFractionDigits(2);
+
+            double per = new BigDecimal((float)correctCount/questionDoneCount).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+            Toast.makeText(this, "恭喜你答完了所有题目，评分是 " + correctCount + "/" + questionDoneCount + " = " + percent.format(per), Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -155,5 +197,12 @@ public class QuizActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         Log.i(TAG, "onSaveInstanceState: ");
         outState.putInt(KEY_INDEX, mCurrentIndex);
+        int[] answerList = new int[mQuestionBank.length];
+        for (int i = 0; i < answerList.length; i++) {
+            answerList[i] = mQuestionBank[i].getAnswered();
+        }
+        outState.putIntArray(KEY_ANSWER, answerList);
+        outState.putInt(KEY_COUNT, correctCount);
+        outState.putInt(KEY_DONE, questionDoneCount);
     }
 }
