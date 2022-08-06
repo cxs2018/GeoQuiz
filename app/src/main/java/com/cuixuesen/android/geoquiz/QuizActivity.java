@@ -32,6 +32,10 @@ public class QuizActivity extends AppCompatActivity {
 
     private static final String KEY_DONE = "done";
 
+    private static final String KEY_IS_CHEATED = "com.cuixuesen.android.geoquiz.quiz_is_cheated";
+
+    private static final String KEY_IDS = "com.cuixuesen.android.geoquiz.quiz_ids";
+
     private Button mTrueButton;
 
     private Button mFalseButton;
@@ -59,6 +63,13 @@ public class QuizActivity extends AppCompatActivity {
 
     private boolean mIsCheater;
 
+    // 使用数组存储每个问题的答案是否偷看过 solve=》用户可以不断单击NEXT按钮，跳过偷看过答案的问题，从而使作弊记录丢失
+    // + solve=》作弊返回后，用户可以旋转QuizActivity来清除mIsCheater变量值
+    private boolean[] mQuestionCheated = new boolean[]{false, false,false, false, false, false};
+
+    // 使用数组来存储每个问题的答案id，以传给CheatActivity显示答案
+    private int[] mQuestionIds = new int[]{0,0,0,0,0,0};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +85,8 @@ public class QuizActivity extends AppCompatActivity {
             }
             correctCount = savedInstanceState.getInt(KEY_COUNT, 0);
             questionDoneCount = savedInstanceState.getInt(KEY_DONE, 0);
+            mQuestionCheated = savedInstanceState.getBooleanArray(KEY_IS_CHEATED);
+            mQuestionIds = savedInstanceState.getIntArray(KEY_IDS);
         }
 
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
@@ -105,7 +118,6 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
-                mIsCheater = false;
                 updateQuestion();
             }
         });
@@ -128,7 +140,8 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
-                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                Log.d(TAG, "" +mQuestionIds[mCurrentIndex]);
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue, mQuestionIds[mCurrentIndex]);
                 startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
         });
@@ -157,7 +170,7 @@ public class QuizActivity extends AppCompatActivity {
 
         int messageResId = 0;
 
-        if (mIsCheater) {
+        if (mQuestionCheated[mCurrentIndex]) {
             messageResId = R.string.judgment_toast;
         } else {
             if (userPressedTrue == answerIsTrue) {
@@ -228,6 +241,8 @@ public class QuizActivity extends AppCompatActivity {
         outState.putIntArray(KEY_ANSWER, answerList);
         outState.putInt(KEY_COUNT, correctCount);
         outState.putInt(KEY_DONE, questionDoneCount);
+        outState.putBooleanArray(KEY_IS_CHEATED, mQuestionCheated);
+        outState.putIntArray(KEY_IDS, mQuestionIds);
     }
 
     @Override
@@ -240,7 +255,8 @@ public class QuizActivity extends AppCompatActivity {
             if (data == null) {
                 return;
             }
-            mIsCheater = CheatActivity.wasAnswerShown(data);
+            mQuestionCheated[mCurrentIndex] = CheatActivity.wasAnswerShown(data);
+            mQuestionIds[mCurrentIndex] = CheatActivity.getAnswerTextId(data);
         }
     }
 }
