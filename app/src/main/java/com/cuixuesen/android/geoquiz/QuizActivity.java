@@ -1,9 +1,12 @@
 package com.cuixuesen.android.geoquiz;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.DialogTitle;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -37,6 +40,8 @@ public class QuizActivity extends AppCompatActivity {
 
     private ImageButton mPrevButton;
 
+    private Button mCheatButton;
+
     private TextView mQuestionTextView;
 
     private Question[] mQuestionBank = new Question[]{
@@ -50,6 +55,10 @@ public class QuizActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
 
+    private static final int REQUEST_CODE_CHEAT = 0;
+
+    private boolean mIsCheater;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +68,7 @@ public class QuizActivity extends AppCompatActivity {
 
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
-            int [] answerList = savedInstanceState.getIntArray(KEY_ANSWER);
+            int[] answerList = savedInstanceState.getIntArray(KEY_ANSWER);
             for (int i = 0; i < mQuestionBank.length; i++) {
                 mQuestionBank[i].setAnswered(answerList[i]);
             }
@@ -96,6 +105,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                mIsCheater = false;
                 updateQuestion();
             }
         });
@@ -110,6 +120,16 @@ public class QuizActivity extends AppCompatActivity {
                 }
                 mCurrentIndex = tempIndex - 1;
                 updateQuestion();
+            }
+        });
+
+        mCheatButton = (Button) findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
         });
 
@@ -137,16 +157,20 @@ public class QuizActivity extends AppCompatActivity {
 
         int messageResId = 0;
 
-        if (userPressedTrue == answerIsTrue) {
-            messageResId = R.string.correct_toast;
-            correctCount++;
-            mQuestionBank[mCurrentIndex].setAnswered(1);
+        if (mIsCheater) {
+            messageResId = R.string.judgment_toast;
         } else {
-            messageResId = R.string.incorrect_toast;
-            mQuestionBank[mCurrentIndex].setAnswered(-1);
+            if (userPressedTrue == answerIsTrue) {
+                messageResId = R.string.correct_toast;
+                correctCount++;
+                mQuestionBank[mCurrentIndex].setAnswered(1);
+            } else {
+                messageResId = R.string.incorrect_toast;
+                mQuestionBank[mCurrentIndex].setAnswered(-1);
+            }
+            mTrueButton.setEnabled(false);
+            mFalseButton.setEnabled(false);
         }
-        mTrueButton.setEnabled(false);
-        mFalseButton.setEnabled(false);
 
 
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
@@ -157,7 +181,7 @@ public class QuizActivity extends AppCompatActivity {
             NumberFormat percent = NumberFormat.getPercentInstance();
             percent.setMaximumFractionDigits(2);
 
-            double per = new BigDecimal((float)correctCount/questionDoneCount).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+            double per = new BigDecimal((float) correctCount / questionDoneCount).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
             Toast.makeText(this, "恭喜你答完了所有题目，评分是 " + correctCount + "/" + questionDoneCount + " = " + percent.format(per), Toast.LENGTH_SHORT).show();
         }
     }
@@ -204,5 +228,19 @@ public class QuizActivity extends AppCompatActivity {
         outState.putIntArray(KEY_ANSWER, answerList);
         outState.putInt(KEY_COUNT, correctCount);
         outState.putInt(KEY_DONE, questionDoneCount);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) {
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
+        }
     }
 }
