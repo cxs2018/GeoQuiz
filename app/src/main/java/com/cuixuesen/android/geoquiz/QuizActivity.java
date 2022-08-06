@@ -65,10 +65,10 @@ public class QuizActivity extends AppCompatActivity {
 
     // 使用数组存储每个问题的答案是否偷看过 solve=》用户可以不断单击NEXT按钮，跳过偷看过答案的问题，从而使作弊记录丢失
     // + solve=》作弊返回后，用户可以旋转QuizActivity来清除mIsCheater变量值
-    private boolean[] mQuestionCheated = new boolean[]{false, false,false, false, false, false};
+    private boolean[] mQuestionCheated = new boolean[]{false, false, false, false, false, false};
 
     // 使用数组来存储每个问题的答案id，以传给CheatActivity显示答案
-    private int[] mQuestionIds = new int[]{0,0,0,0,0,0};
+    private int[] mQuestionIds = new int[]{0, 0, 0, 0, 0, 0};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,7 +140,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
-                Log.d(TAG, "" +mQuestionIds[mCurrentIndex]);
+                Log.d(TAG, "" + mQuestionIds[mCurrentIndex]);
                 Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue, mQuestionIds[mCurrentIndex]);
                 startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
