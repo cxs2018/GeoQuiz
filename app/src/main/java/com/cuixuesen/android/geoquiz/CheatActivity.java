@@ -7,11 +7,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 public class CheatActivity extends AppCompatActivity {
+
+    private static final String TAG = "CheatActivity";
 
     private static final String EXTRA_ANSWER_IS_TRUE = "com.cuixuesen.android.geoquiz.answer_is_true";
 
@@ -50,8 +53,12 @@ public class CheatActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             mIsAnswerShown = savedInstanceState.getBoolean(EXTRA_IS_CHEATED, false);
             setAnswerShownResult(mIsAnswerShown);
-            mAnswerText = savedInstanceState.getInt(EXTRA_ANSWER_TEXT);
-            mAnswerTextView.setText(mAnswerText);
+            mAnswerText = savedInstanceState.getInt(EXTRA_ANSWER_TEXT, 0);
+            Log.d(TAG, "onCreate: " + mAnswerText);
+            // 如果没有点击SHOW ANSWER，mAnswerText是0，为0的话不能设置文本
+            if (mAnswerText != 0) {
+                mAnswerTextView.setText(mAnswerText);
+            }
         }
 
         mAnswerIsTrue = getIntent().getBooleanExtra(EXTRA_ANSWER_IS_TRUE, false);

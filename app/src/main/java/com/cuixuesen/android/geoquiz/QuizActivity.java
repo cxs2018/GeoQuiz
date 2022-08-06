@@ -36,6 +36,8 @@ public class QuizActivity extends AppCompatActivity {
 
     private static final String KEY_IDS = "com.cuixuesen.android.geoquiz.quiz_ids";
 
+    private static final String KEY_CHEAT_LEFT_COUNT = "com.cuixuesen.android.geoquiz.quiz_cheat_left_count";
+
     private Button mTrueButton;
 
     private Button mFalseButton;
@@ -70,6 +72,10 @@ public class QuizActivity extends AppCompatActivity {
     // 使用数组来存储每个问题的答案id，以传给CheatActivity显示答案
     private int[] mQuestionIds = new int[]{0, 0, 0, 0, 0, 0};
 
+    private int mCheatCount = 0;
+
+    private TextView mCheatLeftCountTextView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,7 +93,10 @@ public class QuizActivity extends AppCompatActivity {
             questionDoneCount = savedInstanceState.getInt(KEY_DONE, 0);
             mQuestionCheated = savedInstanceState.getBooleanArray(KEY_IS_CHEATED);
             mQuestionIds = savedInstanceState.getIntArray(KEY_IDS);
+            mCheatCount = savedInstanceState.getInt(KEY_CHEAT_LEFT_COUNT, 0);
         }
+
+        mCheatLeftCountTextView = (TextView)findViewById(R.id.cheat_left_count);
 
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
         mQuestionTextView.setOnClickListener(new View.OnClickListener() {
@@ -139,6 +148,12 @@ public class QuizActivity extends AppCompatActivity {
         mCheatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // 这种方式是只记录用户点击CHEAT按钮的次数，但其实点击了它进入偷看页，但未点击SHOW ANSWER按钮也算偷看一次，先这样了
+                // solve =》记录作弊次数，最多3次
+                if (mCheatCount >= 2) {
+                    mCheatButton.setEnabled(false);
+                }
+                mCheatCount++;
                 boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
                 Log.d(TAG, "" + mQuestionIds[mCurrentIndex]);
                 Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue, mQuestionIds[mCurrentIndex]);
@@ -227,6 +242,11 @@ public class QuizActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume: ");
+        mCheatLeftCountTextView.setText("cheat left count: " + (3 - mCheatCount));
+        // 次数为0时，需要禁用偷看按钮，旋转设备需要再判断设置一下
+        if (3 - mCheatCount <= 0) {
+            mCheatButton.setEnabled(false);
+        }
     }
 
     @Override
@@ -243,6 +263,7 @@ public class QuizActivity extends AppCompatActivity {
         outState.putInt(KEY_DONE, questionDoneCount);
         outState.putBooleanArray(KEY_IS_CHEATED, mQuestionCheated);
         outState.putIntArray(KEY_IDS, mQuestionIds);
+        outState.putInt(KEY_CHEAT_LEFT_COUNT, mCheatCount);
     }
 
     @Override
